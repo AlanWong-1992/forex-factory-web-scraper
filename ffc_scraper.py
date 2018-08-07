@@ -9,9 +9,6 @@ import calendar
 import sys
 import os
 
-print("Number of command line arguments: "+str(len(sys.argv)))
-print("The arguments are: "+str(sys.argv))
-
 def getEventsCalendar(start_date, end_date, file_path):
 
 	# Gets One Day at a time
@@ -66,6 +63,7 @@ def getEventsCalendar(start_date, end_date, file_path):
 			event_time = news.text.strip()
 			print(event_time)
 			print(event)
+
 			try:
 				matchObj = re.search('([0-9]+)(:[0-9]{2})([a|p]m)', event_time) # Regex to match time in the format HH:MMam/pm
 				if(matchObj != None):
@@ -81,13 +79,14 @@ def getEventsCalendar(start_date, end_date, file_path):
 					event_time_minutes = ':00'
 					am_or_pm = 'am'
 				else:
-					event_time_hour = '0'
-					event_time_minutes = ':00'
-					am_or_pm = 'am'
+					# Logs error date and time into error_logs file 
+					cwd = os.path.dirname(file_path)
+					file_path = cwd+"//error_logs.txt"
+					with open(file_path, 'a') as file:
+						file.write('{}, {}, {}\n'.format(start_date, event_time, event))
+					continue
+					
 
-				# print("Event time hour: "+event_time_hour)
-				# print("Event time Minutes: "+event_time_minutes)
-				# print("AM or PM: "+am_or_pm)
 				adjusted_date_time = timeDateAdjust(event_time_hour, event_time_minutes, am_or_pm, 5, year, month, day) # Returns a tuple with 3 elements consisting of 'event date YYYY:MM:DD', 'event time HH:MM', 'day of week Mon-Fri'
 
 				event_date = adjusted_date_time[0]
@@ -103,23 +102,13 @@ def getEventsCalendar(start_date, end_date, file_path):
 					event_date_time = '{} {}'.format(event_date, event_time_holder) #
 			except Exception as e:
 				print("There was an error: "+e)
-				# if event_time == "All Day": # If the event_time says 'All day' in forex factory then the regex will not match it and we set it to midnight of that day
-				# 	event_time_holder = "0:00"
-				# 	event_date_time = '{} {}'.format(event_date, event_time_holder) #
-				# else:
-				# 	event_time_holder = event_time_holder
-				# 	event_date_time = '{} {}'.format(event_date, event_time_holder) #
 
 			with open(file_path, 'a') as file:
 				file.write('{}, {}, {}, {}, {}, {}, {}, {}, {}\n'.format(day_of_week, event_date_time, event_time_holder, curr, impact, event, previous, forecast, actual))
 
 	if start_date == end_date:
 		print('Successfully retrieved all data')
-		cwd = os.path.dirname(file_path)
-		file_path = cwd+"//ffc_events_scraper_successful.txt"
-		with open(file_path, 'w') as file:
-			file.write("")
-		return
+		
 
 	scrape_next_day = soup.find('div', class_='head').find_next('a', class_='calendar__pagination--next')['href']
 
@@ -130,23 +119,6 @@ def strToIntMonth(month):
 	#
 	# Function to convert Str Month into an Int
 	#
-
-	# return {
-
-	# 	'Jan' : 1,
-	# 	'Feb' : 2,
-	# 	'Mar' : 3,
-	# 	'Apr' : 4,
-	# 	'May' : 5,
-	# 	'Jun' : 6,
-	# 	'Jul' : 7,
-	# 	'Aug' : 8,
-	# 	'Sep' : 9,
-	# 	'Oct' : 10,
-	# 	'Nov' : 11,
-	# 	'Dec' : 12
-
- # 	}
 
 	if(month == 'Jan'):
 		return 1
@@ -215,5 +187,5 @@ if __name__ == "__main__":
     # print("File Path: "+file_path)
     with open(file_path, 'a') as file:
     	file.write(""); # Needs to write an empty line so that file is opened and getEventsCalendar can append to the file
-    getEventsCalendar("calendar.php?day=jan1.2016","calendar.php?day=jul15.2018", file_path)
+    getEventsCalendar("calendar.php?day=sep27.2007","calendar.php?day=sep30.2007", file_path)
 
