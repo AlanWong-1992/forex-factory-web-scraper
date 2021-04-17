@@ -1,5 +1,7 @@
 #Forex Factory Scraper
 from urllib.request import urlopen
+import requests
+import cloudscraper
 from bs4 import BeautifulSoup
 from datetime import date, timedelta
 import re
@@ -9,17 +11,21 @@ import calendar
 import sys
 import os
 
+
 def getEventsCalendar(start_date, end_date, file_path):
+
+	scraper = cloudscraper.create_scraper() # Need cloudscraper to bypass cloudflare
 
 	# Gets One Day at a time
 	#
-	print(start_date)
+	print('start date: ' + start_date)
+	print('end date: ' + end_date + '\n')
 	# specify the url
 	url = 'https://www.forexfactory.com/' + start_date
 
 	# query the website and return the html to the variable ‘page’
-	page = urlopen(url)
-
+	page = scraper.get(url).text
+	# print(page)
 	# parse the html using beautiful soup and store in variable `soup`
 	soup = BeautifulSoup(page, 'html.parser')
 	# Take out the <div> of name and get its value
@@ -61,8 +67,8 @@ def getEventsCalendar(start_date, end_date, file_path):
 			forecast = news.find_next_sibling('td', class_ = 'forecast').text
 			actual = news.find_next_sibling('td', class_ = 'actual').text
 			event_time = news.text.strip()
-			print(event_time)
-			print(event)
+			# print(event_time)
+			# print(event)
 
 			try:
 				matchObj = re.search('([0-9]+)(:[0-9]{2})([a|p]m)', event_time) # Regex to match time in the format HH:MMam/pm
@@ -101,18 +107,17 @@ def getEventsCalendar(start_date, end_date, file_path):
 					event_time_holder = event_time_holder # event_time_holder remains the same and should have the value of the first event which was assigned a time
 					event_date_time = '{} {}'.format(event_date, event_time_holder) #
 			except Exception as e:
-				print("There was an error: "+e)
+				print("There was an error: " + e)
 
 			with open(file_path, 'a') as file:
 				file.write('{}, {}, {}, {}, {}, {}, {}, {}, {}\n'.format(day_of_week, event_date_time, event_time_holder, curr, impact, event, previous, forecast, actual))
 
 	if start_date == end_date:
 		print('Successfully retrieved all data')
-		
-
-	scrape_next_day = soup.find('div', class_='head').find_next('a', class_='calendar__pagination--next')['href']
-
-	getEventsCalendar(scrape_next_day, end_date, file_path)
+		return True
+	else:
+		scrape_next_day = soup.find('div', class_='head').find_next('a', class_='calendar__pagination--next')['href']
+		getEventsCalendar(scrape_next_day, end_date, file_path)
 
 
 def strToIntMonth(month):
@@ -181,11 +186,9 @@ if __name__ == "__main__":
     abs_path = os.path.abspath(__file__)
     cwd = os.path.dirname(abs_path)
     parent_dir = os.path.dirname(cwd)  
-    # print(parent_dir)
     file_path = parent_dir + "\\Files\\test.csv"
-    # print("Absolute Path"+abs_path)
-    # print("File Path: "+file_path)
-    with open(file_path, 'a') as file:
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, 'a+') as file:
     	file.write(""); # Needs to write an empty line so that file is opened and getEventsCalendar can append to the file
-    getEventsCalendar("calendar.php?day=sep27.2007","calendar.php?day=sep30.2007", file_path)
+    getEventsCalendar("calendar.php?day=apr12.2021","calendar?day=apr15.2021", file_path)
 
