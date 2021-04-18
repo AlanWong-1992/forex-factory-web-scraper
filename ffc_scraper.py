@@ -11,6 +11,10 @@ import calendar
 import sys
 import os
 
+list_of_news_events = []
+
+# Used to hold event time as not all event times have a time if multiple news events start at the same time
+event_time_holder = '' # Holds event time of previous news event if it does not have one
 
 def getEventsCalendar(start_date, end_date, file_path):
 
@@ -18,8 +22,8 @@ def getEventsCalendar(start_date, end_date, file_path):
 
 	# Gets One Day at a time
 	#
-	print('start date: ' + start_date)
-	print('end date: ' + end_date + '\n')
+	# print('start date: ' + start_date)
+	# print('end date: ' + end_date + '\n')
 	# specify the url
 	url = 'https://www.forexfactory.com/' + start_date
 
@@ -54,9 +58,6 @@ def getEventsCalendar(start_date, end_date, file_path):
 	# Event Times 
 	event_times = table.find_all('td', class_ = 'calendar__time')
 
-	# Used to hold event time as not all event times have a time if multiple news events start at the same time
-	event_time_holder = '' # Holds event time of previous news event as news event is not 
-
 	if(day_of_week != 'Sat' and day_of_week != 'Sun' ):
 		for news in event_times:
 			curr = news.find_next_sibling('td', class_ = 'currency').text.strip()
@@ -67,8 +68,6 @@ def getEventsCalendar(start_date, end_date, file_path):
 			forecast = news.find_next_sibling('td', class_ = 'forecast').text
 			actual = news.find_next_sibling('td', class_ = 'actual').text
 			event_time = news.text.strip()
-			# print(event_time)
-			# print(event)
 
 			try:
 				matchObj = re.search('([0-9]+)(:[0-9]{2})([a|p]m)', event_time) # Regex to match time in the format HH:MMam/pm
@@ -85,14 +84,11 @@ def getEventsCalendar(start_date, end_date, file_path):
 					event_time_minutes = ':00'
 					am_or_pm = 'am'
 				else:
-					# Logs error date and time into error_logs file 
-					cwd = os.path.dirname(file_path)
-					file_path = cwd+"//error_logs.txt"
+					# else no time and use previous events time and write to file
 					with open(file_path, 'a') as file:
-						file.write('{}, {}, {}\n'.format(start_date, event_time, event))
+						file.write('{}, {}, {}, {}, {}, {}, {}, {}, {}\n'.format(day_of_week, event_date_time, event_time_holder, curr, impact, event, previous, forecast, actual))
 					continue
 					
-
 				adjusted_date_time = timeDateAdjust(event_time_hour, event_time_minutes, am_or_pm, 5, year, month, day) # Returns a tuple with 3 elements consisting of 'event date YYYY:MM:DD', 'event time HH:MM', 'day of week Mon-Fri'
 
 				event_date = adjusted_date_time[0]
@@ -105,10 +101,13 @@ def getEventsCalendar(start_date, end_date, file_path):
 					event_date_time = '{} {}'.format(event_date, event_time_holder) #
 				else:
 					event_time_holder = event_time_holder # event_time_holder remains the same and should have the value of the first event which was assigned a time
-					event_date_time = '{} {}'.format(event_date, event_time_holder) #
+					event_date_time = '{} {}'.format(event_date, event_time_holder) 
+
 			except Exception as e:
 				print("There was an error: " + e)
 
+			print(file_path)
+			# print('{}, {}, {}, {}, {}, {}, {}, {}, {}\n'.format(day_of_week, event_date_time, event_time_holder, curr, impact, event, previous, forecast, actual))
 			with open(file_path, 'a') as file:
 				file.write('{}, {}, {}, {}, {}, {}, {}, {}, {}\n'.format(day_of_week, event_date_time, event_time_holder, curr, impact, event, previous, forecast, actual))
 
@@ -186,9 +185,11 @@ if __name__ == "__main__":
     abs_path = os.path.abspath(__file__)
     cwd = os.path.dirname(abs_path)
     parent_dir = os.path.dirname(cwd)  
-    file_path = parent_dir + "\\Files\\test.csv"
+    file_path = parent_dir + "\\ffc_news_events.csv"
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, 'a+') as file:
-    	file.write(""); # Needs to write an empty line so that file is opened and getEventsCalendar can append to the file
-    getEventsCalendar("calendar.php?day=apr12.2021","calendar?day=apr15.2021", file_path)
+    	file.write("") # Needs to write an empty line so that file is opened and getEventsCalendar can append to the file
+    getEventsCalendar("calendar?day=apr12.2020","calendar?day=apr17.2021", file_path)
+
+	
 
