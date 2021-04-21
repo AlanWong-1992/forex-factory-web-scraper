@@ -1,6 +1,4 @@
 #Forex Factory Scraper
-from urllib.request import urlopen
-import requests
 import cloudscraper
 from bs4 import BeautifulSoup
 from datetime import date, timedelta
